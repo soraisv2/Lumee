@@ -61,8 +61,10 @@ export interface DepthImageProps {
   orbitDuration?: number;
   /** Floor colour behind the relief. */
   backgroundColor?: string;
-  /** Freeze the light. */
+  /** Freeze the light and stop rendering; the last frame stays on screen. */
   paused?: boolean;
+  /** Follow the pointer anywhere on the page, for images placed behind other content. */
+  trackWindow?: boolean;
   /** Render scale cap. */
   dpr?: number;
   className?: string;
@@ -99,6 +101,7 @@ export function DepthImage({
   orbitDuration = 10,
   backgroundColor = "#0a0a0a",
   paused = false,
+  trackWindow = false,
   dpr = 1.5,
   className,
   children,
@@ -270,8 +273,9 @@ export function DepthImage({
     function onPointerLeave() {
       pointerActive = false;
     }
-    container.addEventListener("pointermove", onPointerMove);
-    container.addEventListener("pointerleave", onPointerLeave);
+    const pointerSource = trackWindow ? document.documentElement : container;
+    pointerSource.addEventListener("pointermove", onPointerMove);
+    pointerSource.addEventListener("pointerleave", onPointerLeave);
 
     let frameId = 0;
     let previousTime = performance.now();
@@ -311,9 +315,8 @@ export function DepthImage({
         uniforms.uSpecular.value = s.specular;
         uniforms.uShininess.value = s.shininess;
         uniforms.uFlatten.value = s.flatten;
+        renderer.render(scene, camera);
       }
-
-      renderer.render(scene, camera);
     }
     animate();
 
@@ -321,8 +324,8 @@ export function DepthImage({
       disposed = true;
       cancelAnimationFrame(frameId);
       resizeObserver.disconnect();
-      container.removeEventListener("pointermove", onPointerMove);
-      container.removeEventListener("pointerleave", onPointerLeave);
+      pointerSource.removeEventListener("pointermove", onPointerMove);
+      pointerSource.removeEventListener("pointerleave", onPointerLeave);
       container.removeChild(renderer.domElement);
       geometry.dispose();
       material.dispose();
@@ -334,7 +337,7 @@ export function DepthImage({
     };
     // Only props that require rebuilding the scene go here; the rest flow through settingsRef.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [image, depthMap, normalMap, fit, dpr, backgroundColor, depthSmoothing, displacement, shadowSoftness]);
+  }, [image, depthMap, normalMap, fit, dpr, backgroundColor, depthSmoothing, displacement, shadowSoftness, trackWindow]);
 
   return (
     <div

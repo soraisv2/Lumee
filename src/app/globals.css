@@ -9,6 +9,7 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --move: 1400ms;
   --line: rgb(255 255 255 / 0.55);
+  --accent: #e7e32a;
 }
 
 html,
@@ -19,11 +20,52 @@ body {
   overscroll-behavior: none;
 }
 
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+}
+
 .label {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease;
+}
+.pill:hover {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+}
+
+/* Darkens the backdrop behind longer reading passages. */
+.veil {
+  position: absolute;
+  inset: 0;
+  background: rgb(8 12 20 / 0.42);
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.scene[data-active="true"] .veil {
+  opacity: 1;
+  transition: opacity 1200ms ease 200ms;
 }
 
 .vertical {
@@ -124,25 +166,224 @@ body {
   }
 }
 
-.reticle {
-  width: clamp(48px, 5vw, 88px);
-  height: clamp(48px, 5vw, 88px);
+.scene-meta {
+  transition: opacity 400ms ease;
+}
+.scene-meta[data-dim="true"] {
+  opacity: 0;
+}
+
+/* ——— Project cards: the grid lines draw their frames ——— */
+
+.pcard {
+  position: absolute;
+  z-index: 2;
+  opacity: 0;
+  transition-property: left, top, width, height, opacity;
+  transition-duration: var(--move), var(--move), var(--move), var(--move), 350ms;
+  transition-timing-function: var(--ease-glide), var(--ease-glide), var(--ease-glide), var(--ease-glide), ease;
+  transition-delay: 90ms, 90ms, 90ms, 90ms, 0ms;
+}
+.scene[data-active="true"] .pcard {
+  opacity: 1;
+  transition-duration: var(--move), var(--move), var(--move), var(--move), 700ms;
+  transition-delay: 90ms, 90ms, 90ms, 90ms, calc(800ms + var(--i) * 70ms);
+}
+.scene[data-active="true"] .pcard[data-dim="true"] {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: var(--move), var(--move), var(--move), var(--move), 300ms;
+  transition-delay: 90ms, 90ms, 90ms, 90ms, 0ms;
+}
+.pcard[data-open="true"] {
+  z-index: 5;
+}
+@starting-style {
+  .scene[data-active="true"] .pcard {
+    opacity: 0;
+  }
+}
+
+/* The inset leaves the grid lines running through the gutters between frames. */
+.pcard-inner {
+  position: absolute;
+  inset: clamp(4px, 0.55vw, 10px);
+  overflow: hidden;
+  container-type: size;
+}
+
+.pcard-visual {
+  position: absolute;
+  inset: 0;
+  transition: transform 1400ms var(--ease-out);
+}
+.pcard-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.5), transparent 55%);
+}
+
+.pcard-top,
+.pcard-bottom {
+  position: absolute;
+  inset-inline: 0;
+  padding: clamp(8px, 3.4cqw, 32px);
+}
+.pcard-top {
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: clamp(9px, 2.1cqw, 12px);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.pcard-bottom {
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: clamp(12px, 4cqw, 48px);
+}
+
+/* Container units let the type grow with the frame as it expands into the overlay. */
+.pcard-title {
+  font-size: clamp(13px, 6.4cqw, 84px);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pcard-sector {
+  margin-top: 0.6em;
+  font-size: clamp(9px, 2.1cqw, 13px);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.pcard-detail {
+  flex: 0 0 min(36cqw, 26rem);
+  font-size: clamp(11px, 1.5cqw, 16px);
+  line-height: 1.55;
+  opacity: 0;
+  translate: 0 12px;
+  transition:
+    opacity 250ms ease,
+    translate 250ms ease;
+}
+.pcard-detail-tags {
+  margin-top: 0.9em;
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.pcard[data-open="false"] .pcard-detail {
+  display: none;
+}
+.pcard[data-open="true"] .pcard-detail {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity 700ms ease 1100ms,
+    translate 900ms var(--ease-out) 1100ms;
+}
+@starting-style {
+  .pcard[data-open="true"] .pcard-detail {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+
+.pcard-close {
+  position: absolute;
+  top: clamp(8px, 3.4cqw, 32px);
+  right: clamp(8px, 3.4cqw, 32px);
+  z-index: 1;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  transition:
+    opacity 600ms ease 1000ms,
+    background-color 300ms ease,
+    color 300ms ease;
+}
+.pcard-close:hover {
+  background: #fff;
+  color: #000;
+}
+@starting-style {
+  .pcard-close {
+    opacity: 0;
+  }
+}
+.pcard[data-open="true"] .pcard-tags {
+  visibility: hidden;
+}
+
+/* Focus mark: a yellow cross locks onto the frame under the pointer. */
+.pcard-focus {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(22px, 9cqw, 56px);
+  height: clamp(22px, 9cqw, 56px);
   translate: -50% -50%;
   background:
-    linear-gradient(#e7e32a, #e7e32a) center / 100% 2px no-repeat,
-    linear-gradient(#e7e32a, #e7e32a) center / 2px 100% no-repeat;
+    linear-gradient(var(--accent), var(--accent)) center / 100% 2px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) center / 2px 100% no-repeat;
   opacity: 0;
-  scale: 0.4;
+  scale: 0.5;
   transition:
     opacity 300ms ease,
-    scale 300ms ease;
+    scale 500ms var(--ease-out);
 }
-.scene[data-active="true"] .reticle {
+@media (hover: hover) {
+  .pcard[data-open="false"]:hover .pcard-focus {
+    opacity: 1;
+    scale: 1;
+  }
+  .pcard[data-open="false"]:hover .pcard-visual {
+    transform: scale(1.05);
+  }
+}
+/* The card's full-size button is invisible, so its focus shows on the frame itself. */
+.pcard-inner > button:not(.pcard-close):focus-visible {
+  outline: none;
+}
+.pcard:has(.pcard-inner > button:not(.pcard-close):focus-visible) .pcard-inner {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.pcard[data-open="false"]:has(button:focus-visible) .pcard-focus {
   opacity: 1;
   scale: 1;
-  transition:
-    opacity 500ms ease 1300ms,
-    scale 900ms var(--ease-out) 1300ms;
+}
+
+@container (width < 230px) {
+  .pcard-tags {
+    display: none;
+  }
+}
+@container (aspect-ratio < 1) {
+  .pcard-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pcard-detail {
+    flex-basis: auto;
+    font-size: clamp(11px, 3.4cqw, 15px);
+  }
 }
 
 /* ——— Backdrops ——— */
@@ -231,7 +472,9 @@ body {
 .bd-studio {
   background: #8f9aac;
 }
-.bd-studio .bd-photo {
+.bd-studio .bd-depth {
+  position: absolute;
+  inset: 0;
   filter: invert(1) grayscale(1) contrast(1.2) blur(12px);
   mix-blend-mode: multiply;
   transform: scale(1.12) translateX(-6%);
@@ -277,28 +520,6 @@ body {
   opacity: 0.7;
   animation-delay: -3s;
 }
-.plus-grid {
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><path d='M50 38v24M38 50h24' stroke='white' stroke-opacity='0.85' stroke-width='1.2'/></svg>");
-  background-size: 19.5vw 19.5vw;
-  background-position: center;
-  /* Clears the crosses behind the title (8–40% × 42–58% of the viewport) and inside
-     the focus frame (40–60% × 30–72%), re-expressed in this layer's box, which
-     overhangs the viewport by 4% on every side. */
-  mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000), linear-gradient(#000, #000);
-  mask-size:
-    29.6% 14.8%,
-    18.6% 38.9%,
-    100% 100%;
-  mask-position:
-    15.8% 50%,
-    50% 51.6%,
-    0 0;
-  mask-repeat: no-repeat;
-  mask-composite: exclude, exclude;
-}
-
 .bd-contact {
   background: #161b23;
 }
@@ -324,7 +545,10 @@ body {
   .bd,
   .reveal-line > span,
   .fade,
-  .reticle {
+  .pcard,
+  .pcard-detail,
+  .pcard-close,
+  .pcard-focus {
     transition-duration: 1ms !important;
     transition-delay: 0s !important;
   }

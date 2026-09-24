@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { SceneId } from "./scenes";
 import { Reveal } from "./Reveal";
 
@@ -5,14 +6,21 @@ const EMAIL = "contact@lumee.fr";
 
 type Vars = React.CSSProperties & Record<`--${string}`, number>;
 
-export function SceneContent({ id, active }: { id: SceneId; active: boolean }) {
+export function SceneShell({ active, children }: { active: boolean; children: React.ReactNode }) {
   return (
     <section data-active={active} inert={!active} className="scene absolute inset-0 z-30">
+      {children}
+    </section>
+  );
+}
+
+export function SceneContent({ id, active }: { id: Exclude<SceneId, "projets">; active: boolean }) {
+  return (
+    <SceneShell active={active}>
       {id === "index" && <IndexScene />}
       {id === "studio" && <StudioScene />}
-      {id === "projets" && <ProjetsScene />}
       {id === "contact" && <ContactScene />}
-    </section>
+    </SceneShell>
   );
 }
 
@@ -46,6 +54,19 @@ function StudioScene() {
         Un seul interlocuteur, du premier appel à la mise en ligne. Pas de template, pas de détour : chaque site part
         d&apos;une page blanche.
       </p>
+      <div
+        className="fade absolute top-[calc(58%+2.4vh)] left-[calc(11%+1.2vw)] max-w-[min(26rem,calc(56%-2.4vw))]"
+        style={{ "--i": 9 } as Vars}
+      >
+        <p className="label">L&apos;IA chez Lumee</p>
+        <p className="mt-3 text-sm leading-relaxed text-white/90 md:text-base">
+          Un outil de notre atelier, jamais un argument de vente. Elle nous fait gagner du temps ; les décisions, elles,
+          restent humaines.
+        </p>
+        <Link href="/studio/ia" scroll={false} className="pill mt-5">
+          En savoir plus sur l&apos;IA et Lumee <span aria-hidden>→</span>
+        </Link>
+      </div>
       <h1 className="absolute top-[calc(58%+2.4vh)] left-[calc(67%+0.9vw)] text-[clamp(1.1rem,min(2.7vw,4.1vh),3.2rem)] leading-[1.02] tracking-[-0.01em] uppercase">
         <Reveal
           lines={[
@@ -58,37 +79,6 @@ function StudioScene() {
           ]}
         />
       </h1>
-    </>
-  );
-}
-
-function ProjetsScene() {
-  return (
-    <>
-      <p className="label fade absolute top-[13%] left-[calc(8%+1.2vw)]">03 — Projets</p>
-      <span aria-hidden className="reticle absolute top-[51%] left-1/2" />
-      <div className="absolute top-[44%] left-[calc(8%+1.2vw)]">
-        <h1 className="text-[clamp(1.6rem,min(3.3vw,6vh),3.8rem)] leading-none font-normal tracking-[-0.02em] uppercase">
-          <Reveal lines={["01 — Projet A"]} />
-        </h1>
-        <dl
-          className="fade mt-4 grid grid-cols-[auto_auto_auto] gap-x-6 text-[10px] leading-[1.35] font-semibold tracking-[0.08em] uppercase md:text-xs"
-          style={{ "--i": 3 } as Vars}
-        >
-          <dt>Projet A</dt>
-          <dd>+</dd>
-          <dd>Identité</dd>
-          <dt>E-commerce</dt>
-          <dd />
-          <dd>Site vitrine</dd>
-          <dt>Q2 — 2026</dt>
-          <dd>+</dd>
-          <dd>En ligne</dd>
-        </dl>
-      </div>
-      <p className="label fade absolute top-[calc(72%+3vh)] left-[calc(60%+1.2vw)]" style={{ "--i": 4 } as Vars}>
-        Mise au point — 01 / 03
-      </p>
     </>
   );
 }
