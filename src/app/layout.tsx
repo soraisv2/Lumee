@@ -10,8 +10,8 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: {
-    default: "Lumee — Studio web",
-    template: "%s — Lumee",
+    default: "Lumee // Studio web",
+    template: "%s // Lumee",
   },
   description: "Lumee conçoit des sites nets, rapides et inoubliables.",
 };

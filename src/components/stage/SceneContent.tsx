@@ -27,7 +27,7 @@ export function SceneContent({ id, active }: { id: Exclude<SceneId, "projets">; 
 function IndexScene() {
   return (
     <>
-      <p className="label fade absolute top-[13%] left-[calc(36%+2.4vw)]">01 — Index</p>
+      <p className="label fade absolute top-[13%] left-[calc(36%+2.4vw)]">01 // Index</p>
       <p className="label fade vertical absolute top-[13%] left-[calc(36%-2.2vw)]">Sites web sur-mesure</p>
       <h1 className="absolute bottom-[calc(26%+3vh)] left-[calc(36%+2.4vw)] text-[clamp(2.8rem,min(8.6vw,15vh),10rem)] leading-[0.9] font-extrabold tracking-[-0.03em] uppercase">
         <Reveal lines={["Sortez", "du flou."]} />
@@ -38,7 +38,7 @@ function IndexScene() {
       >
         Lumee conçoit des sites nets, rapides et inoubliables pour les marques qui refusent de se fondre dans le décor.
       </p>
-      <p className="label fade absolute bottom-[calc(26%+2vh)] left-[6%] hidden md:block">Studio web — ©2026</p>
+      <p className="label fade absolute bottom-[calc(26%+2vh)] left-[6%] hidden md:block">Studio web // ©2026</p>
     </>
   );
 }
@@ -46,7 +46,7 @@ function IndexScene() {
 function StudioScene() {
   return (
     <>
-      <p className="label fade absolute top-[13%] left-[calc(11%+1.2vw)]">02 — Studio</p>
+      <p className="label fade absolute top-[13%] left-[calc(11%+1.2vw)]">02 // Studio</p>
       <p
         className="fade absolute bottom-[calc(42%+3vh)] left-[calc(11%+1.2vw)] max-w-[24rem] pr-6 text-sm leading-relaxed text-white/85 md:text-base"
         style={{ "--i": 7 } as Vars}
@@ -86,7 +86,7 @@ function StudioScene() {
 function ContactScene() {
   return (
     <>
-      <p className="label fade absolute top-[13%] left-[calc(6%+1.2vw)]">04 — Contact</p>
+      <p className="label fade absolute top-[13%] left-[calc(6%+1.2vw)]">04 // Contact</p>
       <h1 className="absolute top-[calc(46%+3vh)] left-[calc(6%+1.2vw)] text-[clamp(2.2rem,min(5.6vw,9vh),6.5rem)] leading-[0.95] tracking-[-0.02em] uppercase">
         <Reveal
           lines={[

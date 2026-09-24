@@ -31,7 +31,7 @@ export function AiScene({ active }: { active: boolean }) {
     <SceneShell active={active}>
       <div aria-hidden className="veil" />
 
-      <p className="label fade absolute top-[13%] left-[calc(6%+1.2vw)]">02 — Studio / L&apos;IA</p>
+      <p className="label fade absolute top-[13%] left-[calc(6%+1.2vw)]">02 // Studio // L&apos;IA</p>
       <Link href="/studio" scroll={false} className="pill fade absolute top-[calc(13%-0.6rem)] right-[6%]">
         Fermer ✕
       </Link>

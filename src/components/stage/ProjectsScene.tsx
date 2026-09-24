@@ -25,7 +25,7 @@ export function ProjectsScene({
     <SceneShell active={active}>
       <div data-dim={open !== null} className="scene-meta">
         <p className="label fade absolute" style={{ left: `${first.x}%`, top: `calc(${first.y}% - 2.2rem)` }}>
-          03 — Projets
+          03 // Projets
         </p>
         <p
           className="label fade absolute text-right"
@@ -90,7 +90,7 @@ function ProjectCard({
     <article
       data-open={isOpen}
       data-dim={dimmed}
-      aria-label={`${number} — ${project.title}`}
+      aria-label={`${number} // ${project.title}`}
       className="pcard"
       style={{ left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%`, "--i": index } as Vars}
     >
@@ -114,7 +114,7 @@ function ProjectCard({
         <div className="pcard-bottom">
           <div>
             <h2 className="pcard-title">
-              {number} — {project.title}
+              {`${number} // ${project.title}`}
             </h2>
             <p className="pcard-sector">
               {project.sector} · {project.year}
