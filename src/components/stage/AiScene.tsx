@@ -21,7 +21,7 @@ const points = [
 ];
 
 // Frame edges must match aiLayout(): columns at 6 / 35.33 / 64.67 / 94 % and a band
-// from 46 to 86 % in landscape, rows at 40 / 56 / 72 / 88 % in portrait. Text always
+// from 46 to 86 % in landscape (88 % on short screens), rows at 40 / 56 / 72 / 88 % in portrait. Text always
 // sits inside a frame, never across a line.
 const COLUMN_LEFT = ["6%", "35.33%", "64.67%"];
 const ROW_TOP = ["40%", "56%", "72%"];
@@ -44,7 +44,7 @@ export function AiScene({ active }: { active: boolean }) {
           ]}
         />
       </h1>
-      <h1 className="absolute bottom-[calc(54%+3vh)] left-[calc(6%+1.2vw)] text-[clamp(1.8rem,min(3.6vw,6.2vh),4.4rem)] leading-[0.95] tracking-[-0.02em] uppercase portrait:hidden">
+      <h1 className="absolute bottom-[calc(54%+3vh)] left-[calc(6%+1.2vw)] text-[clamp(1.8rem,min(3.6vw,6.2vh),4.4rem)] leading-[0.95] tracking-[-0.02em] uppercase portrait:hidden short:text-[1.3rem]">
         <Reveal
           lines={[
             <span key="a" className="font-light">L&apos;IA,</span>,
@@ -56,7 +56,7 @@ export function AiScene({ active }: { active: boolean }) {
       </h1>
 
       <p
-        className="fade absolute top-[calc(18%+5.5rem)] right-[6%] left-[calc(6%+1.2vw)] text-sm leading-relaxed text-white/85 landscape:top-auto landscape:right-auto landscape:bottom-[calc(54%+3vh)] landscape:left-[calc(35.33%+1.2vw)] landscape:w-[calc(29.33%-2.4vw)] md:text-base"
+        className="fade absolute top-[calc(18%+5.2rem)] right-[6%] left-[calc(6%+1.2vw)] text-[12.5px] leading-snug text-white/85 landscape:text-sm landscape:leading-relaxed landscape:top-auto landscape:right-auto landscape:bottom-[calc(54%+3vh)] landscape:left-[calc(35.33%+1.2vw)] landscape:w-[calc(29.33%-2.4vw)] md:text-base short:text-[11px] short:leading-snug"
         style={{ "--i": 3 } as Vars}
       >
         Tout le monde met l&apos;IA en vitrine. Chez Lumee, elle reste à l&apos;atelier : elle nous fait gagner du
@@ -66,12 +66,12 @@ export function AiScene({ active }: { active: boolean }) {
       {points.map((point, i) => (
         <div
           key={point.title}
-          className="fade absolute right-[6%] left-[calc(6%+1.2vw)] top-[calc(var(--row)+1.4vh)] landscape:right-auto landscape:left-[calc(var(--col)+1.2vw)] landscape:top-[calc(46%+3vh)] landscape:w-[calc(29.33%-2.4vw)]"
+          className="fade absolute right-[6%] left-[calc(6%+1.2vw)] top-[calc(var(--row)+1.4vh)] landscape:right-auto landscape:left-[calc(var(--col)+1.2vw)] landscape:top-[calc(46%+3vh)] landscape:w-[calc(29.33%-2.4vw)] short:top-[calc(46%+1vh)]"
           style={{ "--i": 4 + i, "--col": COLUMN_LEFT[i], "--row": ROW_TOP[i] } as Vars}
         >
-          <span className="text-xs font-medium tabular-nums text-(--accent)">0{i + 1}</span>
-          <h2 className="mt-1 text-lg font-semibold tracking-[-0.01em] landscape:mt-4 landscape:text-2xl">{point.title}</h2>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-white/80 landscape:mt-3 landscape:text-sm landscape:md:text-base">
+          <span className="text-xs font-medium tabular-nums text-(--accent) short:leading-none">0{i + 1}</span>
+          <h2 className="mt-1 text-base font-semibold tracking-[-0.01em] landscape:mt-4 landscape:text-2xl short:mt-1 short:text-[15px] short:leading-tight">{point.title}</h2>
+          <p className="mt-1 text-[12.5px] leading-snug text-white/80 landscape:mt-3 landscape:text-sm landscape:leading-relaxed landscape:md:text-base short:mt-1 short:text-[11px] short:leading-snug">
             {point.text}
           </p>
         </div>

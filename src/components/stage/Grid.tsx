@@ -8,17 +8,26 @@ type Vars = React.CSSProperties & Record<`--${string}`, number | string>;
 // Lines keep stable keys across scenes, so changing scene moves the same
 // elements and CSS transitions animate them to their new positions.
 // Sits above scene content so lines frame it; it never takes pointer events.
-export function Grid({ geometry }: { geometry: Geometry }) {
-  const vDelay = (i: number) => i * STAGGER_MS;
-  const hDelay = (i: number) => (geometry.v.length + i) * STAGGER_MS;
+// `quick` is for lines that follow the pointer: a shorter glide, no stagger.
+export function Grid({ geometry, quick = false }: { geometry: Geometry; quick?: boolean }) {
+  const stagger = quick ? 0 : STAGGER_MS;
+  const vDelay = (i: number) => i * stagger;
+  const hDelay = (i: number) => (geometry.v.length + i) * stagger;
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-[35]">
+    <div aria-hidden className={`pointer-events-none absolute inset-0 z-[35] ${quick ? "[--move:650ms]" : ""}`}>
       {geometry.v.map((x, i) => (
         <span
           key={`v${i}`}
           className="grid-line grid-line-v"
-          style={{ "--p": x, "--o": geometry.vOff?.includes(i) ? 0 : 1, transitionDelay: `${vDelay(i)}ms` } as Vars}
+          style={
+            {
+              "--p": x,
+              "--from": geometry.vFrom?.[i] ?? 0,
+              "--o": geometry.vOff?.includes(i) ? 0 : 1,
+              transitionDelay: `${vDelay(i)}ms`,
+            } as Vars
+          }
         />
       ))}
       {geometry.h.map((y, i) => (

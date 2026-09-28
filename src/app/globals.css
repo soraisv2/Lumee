@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Phones held sideways: wide but very short, so text must shrink to stay inside its frame. */
+@custom-variant short (@media (orientation: landscape) and (max-height: 540px));
+
 @theme inline {
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 }
@@ -49,10 +52,127 @@ body {
     color 300ms ease,
     border-color 300ms ease;
 }
+@media (orientation: landscape) and (max-height: 540px) {
+  .pill {
+    padding-block: 0.5rem;
+  }
+}
 .pill:hover {
   background: #fff;
   border-color: #fff;
   color: #000;
+}
+
+/* Header logo: hovering strikes a spotlight on it — fast to light, slow to fade. */
+.logo-spot {
+  position: relative;
+  isolation: isolate;
+  color: rgb(255 255 255 / 0.78);
+  transition:
+    color 700ms ease,
+    text-shadow 700ms ease;
+}
+.logo-spot::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: 9rem;
+  height: 4.5rem;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 248 236 / 0.5), rgb(255 248 236 / 0.16) 55%, transparent);
+  filter: blur(6px);
+  opacity: 0;
+  scale: 0.55;
+  pointer-events: none;
+  transition:
+    opacity 700ms ease,
+    scale 900ms var(--ease-out);
+}
+.logo-spot:hover,
+.logo-spot:focus-visible {
+  color: #fff;
+  text-shadow:
+    0 0 10px rgb(255 255 255 / 0.85),
+    0 0 28px rgb(255 244 225 / 0.55);
+  transition:
+    color 180ms ease-out,
+    text-shadow 260ms ease-out;
+}
+.logo-spot:hover::before,
+.logo-spot:focus-visible::before {
+  opacity: 1;
+  scale: 1;
+  transition:
+    opacity 220ms ease-out,
+    scale 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ——— Mobile menu ——— */
+
+/* Display is left to utilities (inline-flex lg:hidden): unlayered CSS would override them. */
+.burger {
+  align-items: center;
+  gap: 0.75rem;
+  text-transform: uppercase;
+  margin: -0.5rem -0.5rem -0.5rem 0;
+  padding: 0.5rem;
+}
+.burger-icon {
+  position: relative;
+  width: 22px;
+  height: 9px;
+}
+.burger-icon > span {
+  position: absolute;
+  inset-inline: 0;
+  height: 1px;
+  background: currentColor;
+  transition:
+    top 500ms var(--ease-out),
+    rotate 500ms var(--ease-out);
+}
+.burger-icon > span:first-child {
+  top: 0;
+}
+.burger-icon > span:last-child {
+  top: 8px;
+}
+/* The two strokes cross like grid lines meeting at a point. */
+.burger[data-open="true"] .burger-icon > span:first-child {
+  top: 4px;
+  rotate: 45deg;
+}
+.burger[data-open="true"] .burger-icon > span:last-child {
+  top: 4px;
+  rotate: -45deg;
+}
+
+.menu {
+  pointer-events: none;
+}
+.menu[data-active="true"] {
+  pointer-events: auto;
+}
+.menu-veil {
+  position: absolute;
+  inset: 0;
+  background: rgb(5 5 5 / 0.72);
+  backdrop-filter: blur(18px);
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+.menu[data-active="true"] .menu-veil {
+  opacity: 1;
+}
+/* The menu answers faster than a scene change: names rise while the lines are still gliding. */
+.menu.scene[data-active="true"] .reveal-line > span {
+  transition-delay: calc(300ms + var(--i, 0) * 60ms);
+}
+.menu.scene[data-active="true"] .fade {
+  transition-delay: calc(450ms + var(--i, 0) * 60ms);
 }
 
 /* Darkens the backdrop behind longer reading passages. */
@@ -84,7 +204,7 @@ body {
   transition-timing-function: var(--ease-glide), var(--ease-glide), ease;
 }
 .grid-line-v {
-  top: 0;
+  top: calc(var(--from, 0) * 1%);
   bottom: 0;
   width: 1px;
   left: calc(var(--p) * 1%);
@@ -463,6 +583,29 @@ body {
   animation-delay: -11s;
 }
 
+.bd-expertises {
+  background: #0b0c0f;
+}
+.bd-expertises .blob {
+  background: radial-gradient(closest-side, rgb(170 184 204 / 0.55), rgb(170 184 204 / 0));
+}
+.bd-expertises .blob-a {
+  width: 58vw;
+  height: 34vw;
+  left: 48%;
+  top: -6%;
+  rotate: 18deg;
+}
+.bd-expertises .blob-b {
+  width: 40vw;
+  height: 26vw;
+  left: -10%;
+  top: 62%;
+  rotate: -14deg;
+  opacity: 0.6;
+  animation-delay: -8s;
+}
+
 .bd-photo {
   position: absolute;
   inset: 0;
@@ -470,13 +613,11 @@ body {
 }
 
 .bd-studio {
-  background: #8f9aac;
+  background: #0f0f0f;
 }
 .bd-studio .bd-depth {
   position: absolute;
   inset: 0;
-  filter: invert(1) grayscale(1) contrast(1.2) blur(12px);
-  mix-blend-mode: multiply;
   transform: scale(1.12) translateX(-6%);
 }
 
@@ -548,7 +689,9 @@ body {
   .pcard,
   .pcard-detail,
   .pcard-close,
-  .pcard-focus {
+  .pcard-focus,
+  .logo-spot,
+  .logo-spot::before {
     transition-duration: 1ms !important;
     transition-delay: 0s !important;
   }

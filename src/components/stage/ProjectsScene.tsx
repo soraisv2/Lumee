@@ -25,7 +25,7 @@ export function ProjectsScene({
     <SceneShell active={active}>
       <div data-dim={open !== null} className="scene-meta">
         <p className="label fade absolute" style={{ left: `${first.x}%`, top: `calc(${first.y}% - 2.2rem)` }}>
-          03 // Projets
+          04 // Projets
         </p>
         <p
           className="label fade absolute text-right"

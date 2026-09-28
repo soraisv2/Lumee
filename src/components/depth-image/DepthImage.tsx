@@ -4,6 +4,12 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { fragmentShader, vertexShader } from "./shaders";
 
+export interface LightPosition {
+  u: number;
+  v: number;
+  elevation: number;
+}
+
 export interface DepthImageProps {
   /** Photo to relight. */
   image: string;
@@ -65,6 +71,16 @@ export interface DepthImageProps {
   paused?: boolean;
   /** Follow the pointer anywhere on the page, for images placed behind other content. */
   trackWindow?: boolean;
+  /**
+   * Where the photo's own light comes from, in photo UV (0–1, y up; may lie outside).
+   * When set, the photo keeps its own lighting as a baseline: a light placed there
+   * leaves it exactly as toned, and moving the light only shifts the shading from it.
+   */
+  bakedLight?: LightPosition;
+  /** Where the light sits while the pointer is away, in photo UV. Defaults to bakedLight. */
+  restLight?: LightPosition;
+  /** Tone curve applied to the photo when bakedLight is set: lift + gain × photo^gamma. */
+  tone?: { gain: number; gamma: number; lift: number };
   /** Render scale cap. */
   dpr?: number;
   className?: string;
@@ -102,6 +118,9 @@ export function DepthImage({
   backgroundColor = "#0a0a0a",
   paused = false,
   trackWindow = false,
+  bakedLight,
+  restLight = bakedLight,
+  tone = { gain: 1, gamma: 1, lift: 0 },
   dpr = 1.5,
   className,
   children,
@@ -131,6 +150,9 @@ export function DepthImage({
     orbitRadius,
     orbitDuration,
     paused,
+    bakedLight,
+    restLight,
+    tone,
   };
   const settingsRef = useRef(settings);
   useEffect(() => {
@@ -163,9 +185,12 @@ export function DepthImage({
     blurTexture.minFilter = THREE.LinearFilter;
     blurTexture.magFilter = THREE.LinearFilter;
 
+    let imageReady = false;
     const texture = loader.load(image, (tex) => {
       if (disposed) return;
       const source = tex.image;
+      uniforms.uImageAspect.value = source.width / source.height;
+      imageReady = true;
       blurCanvas.width = 512;
       blurCanvas.height = Math.max(1, Math.round((512 * source.height) / source.width));
       const ctx = blurCanvas.getContext("2d")!;
@@ -197,7 +222,7 @@ export function DepthImage({
       uNormalMap: { value: null as THREE.Texture | null },
       uHasDepthMap: { value: 0 },
       uHasNormalMap: { value: 0 },
-      uAspect: { value: 1 },
+      uImageAspect: { value: 1.5 },
       uDisplacement: { value: displacement },
       uShadowSoftness: { value: shadowSoftness },
       uUvScale: { value: new THREE.Vector2(1, 1) },
@@ -219,6 +244,9 @@ export function DepthImage({
       uShininess: { value: shininess },
       uFlatten: { value: flatten },
       uBackgroundColor: { value: new THREE.Color(backgroundColor).convertLinearToSRGB() },
+      uHasRest: { value: 0 },
+      uRestLight: { value: new THREE.Vector3() },
+      uTone: { value: new THREE.Vector3(1, 1, 0) },
     };
     uniforms.uDepthMap.value = loadMap(depthMap, uniforms.uHasDepthMap);
     uniforms.uNormalMap.value = loadMap(normalMap, uniforms.uHasNormalMap);
@@ -249,18 +277,27 @@ export function DepthImage({
       const width = container!.clientWidth;
       const height = container!.clientHeight;
       renderer.setSize(Math.max(1, width), Math.max(1, height));
-      uniforms.uAspect.value = width / Math.max(1, height);
       updateUvTransform();
     }
     resize();
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container);
 
-    // Pointer position in [-1, 1] plane space, smoothed toward the target.
+    // The pointer is read in container space ([-1, 1] across the element); the light
+    // lives in image space, where the shader does its lighting.
     const pointerTarget = new THREE.Vector2(0, 0);
-    const pointerCurrent = new THREE.Vector2(0, 0);
+    const lightTarget = new THREE.Vector3();
+    const light = new THREE.Vector3(0, 0, elevation);
+    const imagePoint = new THREE.Vector2();
+    let lightPlaced = false;
     let pointerActive = false;
     let idleTime = 0;
+
+    function containerToImage(x: number, y: number) {
+      const u = uniforms.uUvOffset.value.x + (x * 0.5 + 0.5) * uniforms.uUvScale.value.x;
+      const v = uniforms.uUvOffset.value.y + (y * 0.5 + 0.5) * uniforms.uUvScale.value.y;
+      return imagePoint.set((u * 2 - 1) * uniforms.uImageAspect.value, v * 2 - 1);
+    }
 
     function onPointerMove(event: PointerEvent) {
       const rect = container!.getBoundingClientRect();
@@ -289,17 +326,36 @@ export function DepthImage({
       const smoothing = 1 - Math.pow(1 - s.follow, dt * 60);
 
       if (!s.paused) {
+        const rest = s.restLight;
+        const aspect = uniforms.uImageAspect.value;
         if (pointerActive) {
           idleTime = 0;
-          pointerCurrent.lerp(pointerTarget, smoothing);
+          const p = containerToImage(pointerTarget.x, pointerTarget.y);
+          lightTarget.set(p.x, p.y, s.elevation);
+        } else if (rest) {
+          lightTarget.set((rest.u * 2 - 1) * aspect, rest.v * 2 - 1, rest.elevation);
         } else if (s.autoOrbit && !reducedMotion.matches) {
           idleTime += dt;
           const angle = (idleTime / s.orbitDuration) * Math.PI * 2;
-          pointerTarget.set(Math.cos(angle) * s.orbitRadius, Math.sin(angle) * s.orbitRadius);
-          pointerCurrent.lerp(pointerTarget, smoothing);
+          const p = containerToImage(Math.cos(angle) * s.orbitRadius, Math.sin(angle) * s.orbitRadius);
+          lightTarget.set(p.x, p.y, s.elevation);
+        } else {
+          lightTarget.copy(light);
         }
 
-        uniforms.uLightPos.value.set(pointerCurrent.x * uniforms.uAspect.value, pointerCurrent.y, s.elevation);
+        // Start exactly on the target (the rest pose, when there is one) once the photo is known.
+        if (!lightPlaced && imageReady) {
+          light.copy(lightTarget);
+          lightPlaced = true;
+        } else {
+          light.lerp(lightTarget, smoothing);
+        }
+
+        uniforms.uLightPos.value.copy(light);
+        const baked = s.bakedLight;
+        uniforms.uHasRest.value = baked ? 1 : 0;
+        if (baked) uniforms.uRestLight.value.set((baked.u * 2 - 1) * aspect, baked.v * 2 - 1, baked.elevation);
+        uniforms.uTone.value.set(s.tone.gain, s.tone.gamma, s.tone.lift);
         uniforms.uLightColor.value.set(s.lightColor);
         uniforms.uLightIntensity.value = s.lightIntensity;
         uniforms.uFalloff.value = s.falloff;

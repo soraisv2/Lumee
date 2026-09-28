@@ -33,12 +33,22 @@ function frameGeometry(xs: number[], ys: number[]): Geometry {
   return { v: v.positions, vOff: v.hidden, h: h.positions, hOff: h.hidden, dots };
 }
 
+// Mobile menu: one band per page. The outer lines frame the list and two
+// horizontal lines target a single band, like a viewfinder locking on.
+export const MENU_BANDS = [16, 30, 44, 58, 72];
+export const MENU_BAND_HEIGHT = 14;
+
+export function menuLayout(target: number): Geometry {
+  const top = MENU_BANDS[target];
+  return frameGeometry([6, 94], [top, top + MENU_BAND_HEIGHT]);
+}
+
 // "L'IA chez Lumee": the Studio lines regroup into three frames, one per point —
-// side by side on landscape screens, stacked on portrait ones.
-export function aiLayout(portrait: boolean): Geometry {
+// side by side on landscape screens (a deeper band on short ones), stacked on portrait ones.
+export function aiLayout(portrait: boolean, short: boolean): Geometry {
   return portrait
     ? frameGeometry([6, 94], [40, 56, 72, 88])
-    : frameGeometry([6, 35.33, 64.67, 94], [46, 86]);
+    : frameGeometry([6, 35.33, 64.67, 94], [46, short ? 88 : 86]);
 }
 
 // Landscape screens get 16:10 frames, at most 3 per row. Portrait screens get at

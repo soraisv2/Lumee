@@ -6,7 +6,8 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { AiScene } from "./AiScene";
 import { Backdrop } from "./Backdrop";
 import { Grid } from "./Grid";
-import { aiLayout, projectsLayout } from "./layout";
+import { aiLayout, menuLayout, projectsLayout } from "./layout";
+import { MobileMenu } from "./MobileMenu";
 import { projects } from "./projects";
 import { ProjectsScene } from "./ProjectsScene";
 import { SceneContent } from "./SceneContent";
@@ -16,6 +17,9 @@ import { useViewport } from "./useViewport";
 const GESTURE_GAP_MS = 200;
 const WHEEL_THRESHOLD_PX = 12;
 const MIN_INTERVAL_MS = 900;
+const MOBILE_MAX_WIDTH = 1024;
+// Matches the `short` CSS variant in globals.css.
+const SHORT_MAX_HEIGHT = 540;
 
 export function Stage() {
   const pathname = usePathname();
@@ -28,29 +32,45 @@ export function Stage() {
 
   // An enlarged project only belongs to the scene it was opened in.
   const [openProject, setOpenProject] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Page the menu lines target; null until the visitor points at one, then the lines follow quickly.
+  const [menuTarget, setMenuTarget] = useState<number | null>(null);
   const [openScene, setOpenScene] = useState(scene.id);
   if (openScene !== scene.id) {
     setOpenScene(scene.id);
     setOpenProject(null);
+    setMenuOpen(false);
   }
+  // The burger menu only exists on small screens; widening the window closes it.
+  const menuActive = menuOpen && viewport.width < MOBILE_MAX_WIDTH;
+  const burgerRef = useRef<HTMLButtonElement>(null);
 
+  const portrait = viewport.height > viewport.width;
+  const short = !portrait && viewport.height <= SHORT_MAX_HEIGHT;
   const projectsView = projectsLayout(projects.length, viewport.width, viewport.height, openProject);
-  const geometry =
-    scene.id === "projets"
+  const geometry = menuActive
+    ? menuLayout(menuTarget ?? index)
+    : scene.id === "projets"
       ? projectsView.geometry
       : aiOpen
-        ? aiLayout(viewport.height > viewport.width)
-        : scene;
+        ? aiLayout(portrait, short)
+        : portrait && scene.portrait
+          ? { ...scene, ...scene.portrait }
+          : short && scene.short
+            ? { ...scene, ...scene.short }
+            : scene;
   const detailOpen = openProject !== null || aiOpen;
 
   const indexRef = useRef(index);
   const openRef = useRef(openProject);
   const aiRef = useRef(aiOpen);
+  const menuRef = useRef(menuActive);
   useEffect(() => {
     indexRef.current = index;
     openRef.current = openProject;
     aiRef.current = aiOpen;
-  }, [index, openProject, aiOpen]);
+    menuRef.current = menuActive;
+  }, [index, openProject, aiOpen, menuActive]);
 
   useEffect(() => {
     let lastWheel = 0;
@@ -59,8 +79,8 @@ export function Stage() {
     let lastMove = 0;
     let touchStartY: number | null = null;
 
-    // While a detail (enlarged project, AI page) is open, scene navigation pauses until it is closed.
-    const detailIsOpen = () => openRef.current !== null || aiRef.current;
+    // While a detail (enlarged project, AI page) or the menu is open, scene navigation pauses.
+    const detailIsOpen = () => openRef.current !== null || aiRef.current || menuRef.current;
     const step = (direction: number) => {
       const now = performance.now();
       const next = scenes[indexRef.current + direction];
@@ -91,7 +111,10 @@ export function Stage() {
     const onKey = (event: KeyboardEvent) => {
       const onControl = event.target instanceof Element && event.target.closest("a, button");
       if (event.key === " " && onControl) return;
-      if (event.key === "Escape" && openRef.current !== null) setOpenProject(null);
+      if (event.key === "Escape" && menuRef.current) {
+        setMenuOpen(false);
+        burgerRef.current?.focus({ preventScroll: true });
+      } else if (event.key === "Escape" && openRef.current !== null) setOpenProject(null);
       else if (event.key === "Escape" && aiRef.current) router.push("/studio", { scroll: false });
       else if (detailIsOpen()) return;
       else if (["ArrowDown", "ArrowRight", "PageDown", " "].includes(event.key)) step(1);
@@ -99,8 +122,10 @@ export function Stage() {
       else return;
       event.preventDefault();
     };
+    // Touches in the menu slide between its pages; they never change scene.
     const onTouchStart = (event: TouchEvent) => {
-      touchStartY = event.touches[0].clientY;
+      const inMenu = event.target instanceof Element && event.target.closest("#menu-mobile");
+      touchStartY = inMenu ? null : event.touches[0].clientY;
     };
     const onTouchEnd = (event: TouchEvent) => {
       if (touchStartY === null) return;
@@ -124,32 +149,45 @@ export function Stage() {
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-white">
       <Backdrop active={scene.id} />
-      <Grid geometry={geometry} />
-      {scenes.map((item) =>
-        item.id === "projets" ? (
-          <ProjectsScene
-            key={item.id}
-            active={scene.id === "projets"}
-            layout={projectsView}
-            open={openProject}
-            onOpen={setOpenProject}
-            onClose={() => setOpenProject(null)}
-          />
-        ) : item.id === "studio" ? (
-          <Fragment key={item.id}>
-            <SceneContent id="studio" active={scene.id === "studio" && !aiOpen} />
-            <AiScene active={scene.id === "studio" && aiOpen} />
-          </Fragment>
-        ) : (
-          <SceneContent key={item.id} id={item.id} active={item.id === scene.id} />
-        ),
-      )}
+      <Grid geometry={geometry} quick={menuActive && menuTarget !== null} />
+      <div inert={menuActive} className="contents">
+        {scenes.map((item) =>
+          item.id === "projets" ? (
+            <ProjectsScene
+              key={item.id}
+              active={scene.id === "projets"}
+              layout={projectsView}
+              open={openProject}
+              onOpen={setOpenProject}
+              onClose={() => setOpenProject(null)}
+            />
+          ) : item.id === "studio" ? (
+            <Fragment key={item.id}>
+              <SceneContent id="studio" active={scene.id === "studio" && !aiOpen} />
+              <AiScene active={scene.id === "studio" && aiOpen} />
+            </Fragment>
+          ) : (
+            <SceneContent key={item.id} id={item.id} active={item.id === scene.id} />
+          ),
+        )}
+      </div>
+      <MobileMenu
+        open={menuActive}
+        activeId={scene.id}
+        target={menuTarget ?? index}
+        // Pointing at the current page before anything else keeps the opening glide.
+        onTarget={(target) => setMenuTarget((previous) => (previous === null && target === index ? null : target))}
+        onClose={() => {
+          setMenuOpen(false);
+          burgerRef.current?.focus({ preventScroll: true });
+        }}
+      />
 
       <header className="label absolute inset-x-0 top-0 z-40 flex items-start justify-between gap-6 px-5 pt-5 md:px-10 md:pt-7">
-        <Link href="/" className="text-[13px] font-extrabold tracking-[0.32em]">
+        <Link href="/" scroll={false} className="logo-spot text-[13px] font-extrabold tracking-[0.32em]">
           Lumee
         </Link>
-        <nav aria-label="Navigation principale" className="flex gap-4 md:gap-8">
+        <nav aria-label="Navigation principale" className="hidden gap-8 lg:flex">
           {scenes.map((item, i) => (
             <Link
               key={item.id}
@@ -158,15 +196,36 @@ export function Stage() {
               aria-current={item.id === scene.id ? "page" : undefined}
               className="transition-opacity duration-500 hover:opacity-100 aria-[current=page]:opacity-100 opacity-50"
             >
-              <span className="mr-2 hidden tabular-nums md:inline">0{i + 1}</span>
+              <span className="mr-2 tabular-nums">0{i + 1}</span>
               {item.label}
             </Link>
           ))}
         </nav>
-        <span className="hidden md:block">©2026</span>
+        <span className="hidden lg:block">©2026</span>
+        <button
+          ref={burgerRef}
+          type="button"
+          onClick={() => {
+            setMenuOpen((open) => !open);
+            setMenuTarget(null);
+          }}
+          aria-expanded={menuActive}
+          aria-controls="menu-mobile"
+          data-open={menuActive}
+          className="burger inline-flex lg:hidden"
+        >
+          <span>{menuActive ? "Fermer" : "Menu"}</span>
+          <span aria-hidden className="burger-icon">
+            <span />
+            <span />
+          </span>
+        </button>
       </header>
 
-      <div className="label absolute inset-x-0 bottom-0 z-40 flex items-end justify-between px-5 pb-5 md:px-10 md:pb-7">
+      <div
+        data-hidden={menuActive}
+        className="label absolute inset-x-0 bottom-0 z-40 flex items-end justify-between px-5 pb-5 transition-opacity duration-500 data-[hidden=true]:opacity-0 md:px-10 md:pb-7"
+      >
         <span className="tabular-nums">
           0{index + 1} / 0{scenes.length}
         </span>
